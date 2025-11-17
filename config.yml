@@ -1,1 +1,2 @@
-db_path: "data/droma.sqlite"
+default:
+  db_path: "/Users/peng/Desktop/Project/DROMA/Data/droma.sqlite"

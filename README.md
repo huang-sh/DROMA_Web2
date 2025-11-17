@@ -1,4 +1,4 @@
-# DROMA Web Application (v2.0) - Refactored
+# DROMA Web Application (v1.0) - Refactored
 
 This is a refactored version of the DROMA Shiny web application that uses the **DROMA.R** and **DROMA.Set** R packages for backend functionality.
 
@@ -114,11 +114,7 @@ install.packages(c("shiny", "shinyWidgets", "shinyjs", "waiter", "DT",
 
 3. **Configure database path**:
 
-Edit `config.yml` to point to your DROMA SQLite database:
-
-```yaml
-db_path: "/path/to/your/droma.sqlite"
-```
+Edit `config.yml` to point to your DROMA SQLite database.
 
 4. **Run the application**:
 
@@ -264,7 +260,7 @@ Place shared utility functions in `Functions/` directory and source as needed in
 
 ## Version History
 
-- **v2.0** (2025-11-17): Refactored to use DROMA.R and DROMA.Set packages
+- **v1.0** (2025-11-17): Refactored to use DROMA.R and DROMA.Set packages
 - **v0.3** (2025-05-13): Original version with custom backend functions
 
 ## License

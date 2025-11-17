@@ -41,7 +41,10 @@ library(DROMA.R)
 # library(reactlog)
 
 # Load ----
-config_list <- config::get()
+config_list <- config::get(
+  # config = "test"
+  # Default is test mode
+)
 
 # Initialize database connection
 db_path <- config_list$db_path
@@ -49,7 +52,7 @@ connectDROMADatabase(db_path)
 
 # Welcome notification
 str1 <- "Nice to meet you."
-str2 <- "Very welcome to my refactored version (v2.0) —2025/11/17"
+str2 <- "Very welcome to my refactored version (v1.0) —2025/11/17"
 str3 <- "You can visit https://github.com/mugpeng/DROMA_DB to reach the toturial."
 modal_notification <- modalDialog(
   # p("Nice to meet you. \n, test"),
