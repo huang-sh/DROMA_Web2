@@ -103,7 +103,7 @@ serverStatAnno <- function(input, output, session){
   stat_plots <- reactive({
     tryCatch({
       generateStatisticalPlots(
-        projects = projects,
+        projects = projects$project_name,
         plot_types = "all",
         use_gap_plots = TRUE
       )
@@ -118,7 +118,7 @@ serverStatAnno <- function(input, output, session){
     tryCatch({
       # Query sample metadata from database
       conn <- get("droma_db_connection", envir = .GlobalEnv)
-      sample_query <- "SELECT * FROM SampleMetadata"
+      sample_query <- "SELECT * FROM sample_anno"
       sample_data <- DBI::dbGetQuery(conn, sample_query)
       sample_data
     }, error = function(e) {
@@ -131,7 +131,7 @@ serverStatAnno <- function(input, output, session){
     tryCatch({
       # Query treatment metadata from database
       conn <- get("droma_db_connection", envir = .GlobalEnv)
-      drug_query <- "SELECT * FROM TreatmentMetadata"
+      drug_query <- "SELECT * FROM drug_anno"
       drug_data <- DBI::dbGetQuery(conn, drug_query)
       drug_data
     }, error = function(e) {
@@ -143,50 +143,50 @@ serverStatAnno <- function(input, output, session){
   # Plot outputs ----
   output$p_count_drugandsample_facet_with_gap <- renderPlot({
     req(stat_plots())
-    if ("count_facet" %in% names(stat_plots())) {
-      stat_plots()$count_facet
+    if ("counts" %in% names(stat_plots()) && "detailed" %in% names(stat_plots()$counts)) {
+      stat_plots()$counts$detailed
     }
   })
   
   output$p_count_drugandsample_sum_with_gap2 <- renderPlot({
     req(stat_plots())
-    if ("count_summary" %in% names(stat_plots())) {
-      stat_plots()$count_summary
+    if ("counts" %in% names(stat_plots()) && "summary" %in% names(stat_plots()$counts)) {
+      stat_plots()$counts$summary
     }
   })
   
   output$p_mol_character <- renderPlot({
     req(stat_plots())
-    if ("molecular_characteristics" %in% names(stat_plots())) {
-      stat_plots()$molecular_characteristics
+    if ("molecular" %in% names(stat_plots())) {
+      stat_plots()$molecular
     }
   })
   
   output$p_overlap_drug <- renderPlot({
     req(stat_plots())
-    if ("drug_overlap" %in% names(stat_plots())) {
-      stat_plots()$drug_overlap
+    if ("overlaps" %in% names(stat_plots()) && "drugs" %in% names(stat_plots()$overlaps)) {
+      stat_plots()$overlaps$drugs
     }
   })
   
   output$p_overlap_sample <- renderPlot({
     req(stat_plots())
-    if ("sample_overlap" %in% names(stat_plots())) {
-      stat_plots()$sample_overlap
+    if ("overlaps" %in% names(stat_plots()) && "samples" %in% names(stat_plots()$overlaps)) {
+      stat_plots()$overlaps$samples
     }
   })
   
   output$p_tumor_bubble <- renderPlot({
     req(stat_plots())
-    if ("tumor_type_plot" %in% names(stat_plots())) {
-      stat_plots()$tumor_type_plot
+    if ("tumor_types" %in% names(stat_plots())) {
+      stat_plots()$tumor_types
     }
   })
   
   output$p_drug_moa <- renderPlot({
     req(stat_plots())
-    if ("drug_moa_plot" %in% names(stat_plots())) {
-      stat_plots()$drug_moa_plot
+    if ("drug_moa" %in% names(stat_plots())) {
+      stat_plots()$drug_moa
     }
   })
   
