@@ -132,7 +132,8 @@ serverDrugOmicPair <- function(input, output, session){
   
   # Create MultiDromaSet (cached across sessions)
   multi_dromaset <- reactive({
-    createMultiDromaSetFromDatabase(project_names = projects)
+    db_path <- config::get()$db_path
+    createMultiDromaSetFromDatabase(project_names = projects$project_name, db_path = db_path)
   })
   
   # Track z-score changes
@@ -155,7 +156,7 @@ serverDrugOmicPair <- function(input, output, session){
     # Get features from database for selected feature type
     tryCatch({
       features_list <- listDROMAFeatures(
-        projects = projects,
+        projects = projects$project_name,
         feature_type = input$select_omics
       )
       omics_search_sel$omics <- unique(features_list$FeatureName)
@@ -174,7 +175,7 @@ serverDrugOmicPair <- function(input, output, session){
   ## Drugs ----
   observe({
     tryCatch({
-      drugs_list <- listDROMATreatments(projects = projects)
+      drugs_list <- listDROMATreatments(projects = projects$project_name)
       drugs_choices <- unique(drugs_list$TreatmentName)
       
       updateSelectizeInput(session = session, inputId = 'select_specific_drug',

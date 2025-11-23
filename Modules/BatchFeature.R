@@ -166,7 +166,8 @@ serverBatchFeature <- function(input, output, session){
   
   # Create MultiDromaSet (cached)
   multi_dromaset <- reactive({
-    createMultiDromaSetFromDatabase(project_names = projects)
+    db_path <- config::get()$db_path
+    createMultiDromaSetFromDatabase(project_names = projects$project_name, db_path = db_path)
   })
   
   # Track z-score changes
@@ -197,11 +198,11 @@ serverBatchFeature <- function(input, output, session){
     tryCatch({
       # Get features list from database
       if (input$select_features1 == "drug") {
-        features_list <- listDROMATreatments(projects = projects)
+        features_list <- listDROMATreatments(projects = projects$project_name)
         features_search_sel$features <- unique(features_list$TreatmentName)
       } else {
         features_list <- listDROMAFeatures(
-          projects = projects,
+          projects = projects$project_name,
           feature_type = input$select_features1
         )
         features_search_sel$features <- unique(features_list$FeatureName)
@@ -245,6 +246,26 @@ serverBatchFeature <- function(input, output, session){
     # Use optimal number of cores
     used_core <- ifelse(parallel::detectCores()/2 > 8, 8, parallel::detectCores()/2)
     
+    # Explicitly get feature list for feature2
+    feature2_list <- NULL
+    tryCatch({
+      if (input$select_features2 == "drug") {
+        f_list <- listDROMATreatments(projects = projects$project_name)
+        feature2_list <- unique(f_list$TreatmentName)
+      } else {
+        f_list <- listDROMAFeatures(
+          projects = projects$project_name,
+          feature_type = input$select_features2
+        )
+        feature2_list <- unique(f_list$FeatureName)
+      }
+    }, error = function(e) {
+      showNotification(paste("Error retrieving feature list:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    req(feature2_list)
+    
     # Use batchFindSignificantFeatures from DROMA_R
     tryCatch({
       results <- batchFindSignificantFeatures(
@@ -252,7 +273,7 @@ serverBatchFeature <- function(input, output, session){
         feature1_type = input$select_features1,
         feature1_name = input$select_specific_feature,
         feature2_type = input$select_features2,
-        feature2_name = NULL,  # NULL means all features of feature2_type
+        feature2_name = feature2_list,  # Pass explicit list
         data_type = input$data_type,
         tumor_type = input$tumor_type,
         overlap_only = FALSE,

@@ -51,11 +51,11 @@ createDrugComparisonPlot <- function(data, comparison_var, value_column,
   
   # Create base plot
   if (show_groups_boxplot) {
-    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = "group", y = value_column)) +
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = group, y = .data[[value_column]])) +
       ggplot2::geom_boxplot(outlier.shape = NA, alpha = 0.7, fill = "lightblue") +
       ggplot2::geom_jitter(width = 0.2, alpha = 0.5, size = 2)
   } else {
-    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = "group", y = value_column)) +
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = group, y = .data[[value_column]])) +
       ggplot2::geom_violin(alpha = 0.7, fill = "lightblue") +
       ggplot2::geom_jitter(width = 0.2, alpha = 0.5, size = 2)
   }

@@ -68,6 +68,8 @@ source("Modules/DrugOmicPair.R")
 source("Modules/BatchFeature.R")
 source("Modules/DrugFeature.R")
 source("Modules/StatAnno.R")
+source("Functions/DatabaseHelpers.R")
+source("Functions/PlottingHelpers.R")
 source("Modules/GlobalSetting.R")
 
 # UI ----
