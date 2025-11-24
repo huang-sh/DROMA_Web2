@@ -116,7 +116,10 @@ serverDrugFeature <- function(input, output, session) {
   ns <- session$ns
   
   # Get available projects from database
-  projects <- listDROMAProjects()
+  projects <- listDROMAProjects(exclude_clinical = T)
+  # Filter projects to only those with drug data
+  projects_with_drug <- listDROMAProjects(feature_type = "drug", show_names_only = TRUE, exclude_clinical = T)
+  projects <- projects[projects$project_name %in% projects_with_drug, ]
   
   # Create MultiDromaSet (cached)
   multi_dromaset <- reactive({
@@ -127,8 +130,13 @@ serverDrugFeature <- function(input, output, session) {
   # Update drug selection choices
   observe({
     tryCatch({
-      drugs_list <- listDROMATreatments(projects = projects$project_name)
-      drugs_choices <- unique(drugs_list$TreatmentName)
+      # Handle multiple projects: loop through and combine results
+      all_drugs <- character(0)
+      for (proj in projects$project_name) {
+        drugs_vec <- listDROMAFeatures(projects = proj, feature_type = "drug")
+        all_drugs <- c(all_drugs, drugs_vec)
+      }
+      drugs_choices <- unique(all_drugs)
       
       updateSelectizeInput(session = session, inputId = 'select_drug',
                            choices = drugs_choices, server = TRUE,

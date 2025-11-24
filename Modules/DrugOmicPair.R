@@ -128,7 +128,11 @@ serverDrugOmicPair <- function(input, output, session){
   ns <- session$ns
   
   # Get available projects from database
-  projects <- listDROMAProjects()
+  projects <- listDROMAProjects(exclude_clinical = T)
+  
+  # Filter projects to only those with drug data (drug list doesn't change, so compute once)
+  projects_with_drug <- listDROMAProjects(feature_type = "drug", show_names_only = TRUE, exclude_clinical = T)
+  filtered_projects_drug <- projects[projects$project_name %in% projects_with_drug, ]
   
   # Create MultiDromaSet (cached across sessions)
   multi_dromaset <- reactive({
@@ -155,11 +159,19 @@ serverDrugOmicPair <- function(input, output, session){
   observeEvent(input$select_omics, {
     # Get features from database for selected feature type
     tryCatch({
-      features_list <- listDROMAFeatures(
-        projects = projects$project_name,
-        feature_type = input$select_omics
-      )
-      omics_search_sel$omics <- unique(features_list$FeatureName)
+      # Filter projects to only those with this omics feature type
+      projects_with_feature <- listDROMAProjects(feature_type = input$select_omics, show_names_only = TRUE, exclude_clinical = T)
+      filtered_projects <- projects[projects$project_name %in% projects_with_feature, ]
+      # Handle multiple projects: loop through and combine results
+      all_features <- character(0)
+      for (proj in filtered_projects$project_name) {
+        features_vec <- listDROMAFeatures(
+          projects = proj,
+          feature_type = input$select_omics
+        )
+        all_features <- c(all_features, features_vec)
+      }
+      omics_search_sel$omics <- unique(all_features)
     }, error = function(e) {
       omics_search_sel$omics <- character(0)
       showNotification(paste("Error loading features:", e$message), type = "error")
@@ -175,8 +187,13 @@ serverDrugOmicPair <- function(input, output, session){
   ## Drugs ----
   observe({
     tryCatch({
-      drugs_list <- listDROMATreatments(projects = projects$project_name)
-      drugs_choices <- unique(drugs_list$TreatmentName)
+      # Handle multiple projects: loop through and combine results
+      all_drugs <- character(0)
+      for (proj in filtered_projects_drug$project_name) {
+        drugs_vec <- listDROMAFeatures(projects = proj, feature_type = "drug")
+        all_drugs <- c(all_drugs, drugs_vec)
+      }
+      drugs_choices <- unique(all_drugs)
       
       updateSelectizeInput(session = session, inputId = 'select_specific_drug',
                            label = 'Drug Selection:', choices = drugs_choices, server = TRUE,

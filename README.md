@@ -1,4 +1,4 @@
-# DROMA Web Application (v1.0) - Refactored
+# DROMA Web Application (v0.9.0) - Refactored
 
 This is a refactored version of the DROMA Shiny web application that uses the **DROMA.R** and **DROMA.Set** R packages for backend functionality.
 
@@ -260,7 +260,7 @@ Place shared utility functions in `Functions/` directory and source as needed in
 
 ## Version History
 
-- **v1.0** (2025-11-17): Refactored to use DROMA.R and DROMA.Set packages
+- **v0.9.0** (2025-11-17): Refactored to use DROMA.R and DROMA.Set packages
 - **v0.3** (2025-05-13): Original version with custom backend functions
 
 ## License

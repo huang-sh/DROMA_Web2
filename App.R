@@ -52,7 +52,7 @@ connectDROMADatabase(db_path)
 
 # Welcome notification
 str1 <- "Nice to meet you."
-str2 <- "Very welcome to my refactored version (v1.0) —2025/11/17"
+str2 <- "Very welcome to my refactored version (v0.9.0) —2025/11/17"
 str3 <- "You can visit https://github.com/mugpeng/DROMA_DB to reach the toturial."
 modal_notification <- modalDialog(
   # p("Nice to meet you. \n, test"),
@@ -68,8 +68,6 @@ source("Modules/DrugOmicPair.R")
 source("Modules/BatchFeature.R")
 source("Modules/DrugFeature.R")
 source("Modules/StatAnno.R")
-source("Functions/DatabaseHelpers.R")
-source("Functions/PlottingHelpers.R")
 source("Modules/GlobalSetting.R")
 
 # UI ----

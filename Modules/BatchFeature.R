@@ -162,7 +162,11 @@ serverBatchFeature <- function(input, output, session){
   ns <- session$ns
   
   # Get available projects from database
-  projects <- listDROMAProjects()
+  projects <- listDROMAProjects(exclude_clinical = T)
+  
+  # Filter projects to only those with drug data (drug list doesn't change, so compute once)
+  projects_with_drug <- listDROMAProjects(feature_type = "drug", show_names_only = TRUE, exclude_clinical = T)
+  filtered_projects_drug <- projects[projects$project_name %in% projects_with_drug, ]
   
   # Create MultiDromaSet (cached)
   multi_dromaset <- reactive({
@@ -198,14 +202,27 @@ serverBatchFeature <- function(input, output, session){
     tryCatch({
       # Get features list from database
       if (input$select_features1 == "drug") {
-        features_list <- listDROMATreatments(projects = projects$project_name)
-        features_search_sel$features <- unique(features_list$TreatmentName)
+        # Handle multiple projects: loop through and combine results
+        all_drugs <- character(0)
+        for (proj in filtered_projects_drug$project_name) {
+          drugs_vec <- listDROMAFeatures(projects = proj, feature_type = "drug")
+          all_drugs <- c(all_drugs, drugs_vec)
+        }
+        features_search_sel$features <- unique(all_drugs)
       } else {
-        features_list <- listDROMAFeatures(
-          projects = projects$project_name,
-          feature_type = input$select_features1
-        )
-        features_search_sel$features <- unique(features_list$FeatureName)
+        # Filter projects to only those with this feature type
+        projects_with_feature <- listDROMAProjects(feature_type = input$select_features1, show_names_only = TRUE, exclude_clinical = T)
+        filtered_projects <- projects[projects$project_name %in% projects_with_feature, ]
+        # Handle multiple projects: loop through and combine results
+        all_features <- character(0)
+        for (proj in filtered_projects$project_name) {
+          features_vec <- listDROMAFeatures(
+            projects = proj,
+            feature_type = input$select_features1
+          )
+          all_features <- c(all_features, features_vec)
+        }
+        features_search_sel$features <- unique(all_features)
       }
       
       updateSelectizeInput(session = session, 
@@ -250,14 +267,27 @@ serverBatchFeature <- function(input, output, session){
     feature2_list <- NULL
     tryCatch({
       if (input$select_features2 == "drug") {
-        f_list <- listDROMATreatments(projects = projects$project_name)
-        feature2_list <- unique(f_list$TreatmentName)
+        # Handle multiple projects: loop through and combine results
+        all_drugs <- character(0)
+        for (proj in filtered_projects_drug$project_name) {
+          drugs_vec <- listDROMAFeatures(projects = proj, feature_type = "drug")
+          all_drugs <- c(all_drugs, drugs_vec)
+        }
+        feature2_list <- unique(all_drugs)
       } else {
-        f_list <- listDROMAFeatures(
-          projects = projects$project_name,
-          feature_type = input$select_features2
-        )
-        feature2_list <- unique(f_list$FeatureName)
+        # Filter projects to only those with this feature type
+        projects_with_feature <- listDROMAProjects(feature_type = input$select_features2, show_names_only = TRUE, exclude_clinical = T)
+        filtered_projects <- projects[projects$project_name %in% projects_with_feature, ]
+        # Handle multiple projects: loop through and combine results
+        all_features <- character(0)
+        for (proj in filtered_projects$project_name) {
+          features_vec <- listDROMAFeatures(
+            projects = proj,
+            feature_type = input$select_features2
+          )
+          all_features <- c(all_features, features_vec)
+        }
+        feature2_list <- unique(all_features)
       }
     }, error = function(e) {
       showNotification(paste("Error retrieving feature list:", e$message), type = "error")
