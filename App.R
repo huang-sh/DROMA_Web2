@@ -33,6 +33,11 @@ library(gg.gap)
 library(snowfall)
 library(parallel)
 
+# Async support for non-blocking operations
+library(future)
+library(promises)
+plan(multisession)  # Use separate R sessions for async tasks
+
 # DROMA Packages
 library(DROMA.Set)
 library(DROMA.R)

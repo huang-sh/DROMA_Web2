@@ -242,23 +242,26 @@ serverBatchFeature <- function(input, output, session){
     })
   })
   
-  # Calculate results ----
-  results <- reactive({
-    # React to z-score changes
-    zscore_tracker()
-    
+  # Calculate results using async execution ----
+  # Use reactiveVal instead of reactive for async support
+  results <- reactiveVal(NULL)
+  
+  # Track ongoing analysis
+  analysis_running <- reactiveVal(FALSE)
+  
+  # Observe trigger for analysis
+  observeEvent(c(input$select_features1, input$select_features2, input$select_specific_feature), {
+    # Only trigger if all inputs are valid
     req(input$select_features1, input$select_features2, input$select_specific_feature)
     
-    # Show progress box
-    shinyjs::show("progressBox")
-    progress_vals$start_time <- Sys.time()
-    progress_vals$features_done <- 0
+    # Don't start if analysis is already running
+    if (analysis_running()) {
+      showNotification("An analysis is already in progress. Please wait...", type = "warning", duration = 3)
+      return()
+    }
     
-    # Simple progress indication
-    updateProgressBar(session = session,
-                      id = ns("progressBar"),
-                      value = 50,
-                      title = "Processing...")
+    # Mark analysis as running
+    analysis_running(TRUE)
     
     # Check if z-score is enabled
     zscore_enabled <- TRUE
@@ -297,55 +300,128 @@ serverBatchFeature <- function(input, output, session){
       }
     }, error = function(e) {
       showNotification(paste("Error retrieving feature list:", e$message), type = "error")
-      return(NULL)
+      analysis_running(FALSE)
+      return()
     })
     
-    req(feature2_list)
+    if (is.null(feature2_list) || length(feature2_list) == 0) {
+      showNotification("No features found for analysis", type = "error")
+      analysis_running(FALSE)
+      return()
+    }
     
-    # Use batchFindSignificantFeatures from DROMA_R
-    tryCatch({
-      results <- batchFindSignificantFeatures(
-        dromaset_object = multi_dromaset(),
-        feature1_type = input$select_features1,
-        feature1_name = input$select_specific_feature,
-        feature2_type = input$select_features2,
-        feature2_name = feature2_list,  # Pass explicit list
-        data_type = input$data_type,
-        tumor_type = input$tumor_type,
+    # Show progress box and initialize
+    shinyjs::show("progressBox")
+    progress_vals$start_time <- Sys.time()
+    progress_vals$total_features <- length(feature2_list)
+    progress_vals$features_done <- 0
+    
+    # Display initial progress
+    updateProgressBar(session = session,
+                      id = ns("progressBar"),
+                      value = 10,
+                      title = sprintf("Analyzing %d features with %d cores...", 
+                                     length(feature2_list), used_core))
+    
+    # Show notification with estimated time
+    est_time <- ceiling(length(feature2_list) / (used_core * 10)) # Rough estimate: 10 features per second per core
+    showNotification(
+      sprintf("Batch analysis started in background. Processing %d features. Estimated time: %d-%d minutes. You can use other modules while waiting.",
+              length(feature2_list), 
+              max(1, floor(est_time * 0.8)), 
+              ceiling(est_time * 1.2)),
+      duration = 10,
+      type = "message"
+    )
+    
+    # Update progress for async start
+    updateProgressBar(session = session,
+                      id = ns("progressBar"),
+                      value = 20,
+                      title = "Running analysis in background (you can switch to other tabs)...")
+    
+    # Capture current inputs for async execution
+    feature1_type <- input$select_features1
+    feature1_name <- input$select_specific_feature
+    feature2_type <- input$select_features2
+    data_type <- input$data_type
+    tumor_type <- input$tumor_type
+    mds <- multi_dromaset()  # Capture current state
+    
+    # Run analysis asynchronously using future/promises
+    future_promise({
+      # This runs in a separate R process, won't block the main session
+      batchFindSignificantFeatures(
+        dromaset_object = mds,
+        feature1_type = feature1_type,
+        feature1_name = feature1_name,
+        feature2_type = feature2_type,
+        feature2_name = feature2_list,
+        data_type = data_type,
+        tumor_type = tumor_type,
         overlap_only = FALSE,
         cores = used_core,
-        show_progress = TRUE,
-        test_top_n = NULL  # NULL means all features
+        show_progress = TRUE,  # This shows progress in background R session
+        test_top_n = NULL
       )
+    }) %...>% {
+      # Success handler (runs when future completes)
+      batch_result <- .
       
       # Update progress to complete
       updateProgressBar(session = session,
                         id = ns("progressBar"),
                         value = 100,
-                        title = "Complete!")
+                        title = "Analysis complete!")
       
-      # Hide progress box when done
+      # Store results
+      results(batch_result)
+      
+      # Hide progress box
+      Sys.sleep(0.5)  # Brief pause so user can see completion
       shinyjs::hide("progressBox")
       
       # Show completion message
-      if (!is.null(results) && nrow(results) > 0) {
+      if (!is.null(batch_result) && nrow(batch_result) > 0) {
+        elapsed_time <- difftime(Sys.time(), progress_vals$start_time, units = "secs")
+        sendSweetAlert(
+          session = session,
+          title = "✓ Analysis Complete!",
+          text = sprintf("Successfully analyzed %d features in %s.\n%d significant associations found (q < 0.01).",
+                         length(feature2_list),
+                         format(elapsed_time, digits = 2),
+                         sum(batch_result$q_value < 0.01, na.rm = TRUE)),
+          type = "success"
+        )
+      } else if (!is.null(batch_result)) {
         sendSweetAlert(
           session = session,
           title = "Analysis Complete",
-          text = sprintf("Processed %d features in %s",
-                         nrow(results),
-                         format(difftime(Sys.time(), progress_vals$start_time), digits = 2)),
-          type = "success"
+          text = "Analysis finished but no results were returned. Please check your parameters.",
+          type = "warning"
         )
       }
       
-      results
-    }, error = function(e) {
+      # Mark analysis as complete
+      analysis_running(FALSE)
+      
+    } %...!% {
+      # Error handler
+      error_msg <- .
+      
       # Hide progress box on error
       shinyjs::hide("progressBox")
-      showNotification(paste("Error in batch analysis:", e$message), type = "error")
-      return(NULL)
-    })
+      
+      showNotification(
+        paste("Error in batch analysis:", 
+              if(inherits(error_msg, "error")) error_msg$message else as.character(error_msg)), 
+        type = "error", 
+        duration = NULL
+      )
+      
+      # Mark analysis as complete
+      analysis_running(FALSE)
+    }
   })
   
   # Render volcano plot ----
