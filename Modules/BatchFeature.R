@@ -21,19 +21,22 @@ uiBatchFeature <- function(id){
     fluidRow(
       # Select Features 1 ----
       column(4,
-             selectInput(inputId = ns("select_features1"), 
-                         "Please select the feature type:", 
-                         choices = c("Copy Number Data" = "cnv",
-                                     "DNA Methylation" = "meth",
-                                     "Gene Fusion" = "fusion",
-                                     "Gene Mutation" = "mutation_gene",
-                                     "Gene Site Mutation" = "mutation_site",
-                                     "mRNA Expression" = "mRNA",
-                                     "Protein RPPA Expression" = "proteinrppa",
-                                     "Protein MS Expression" = "proteinms",
-                                     "Drug Sensitivity" = "drug"
-                         ), selected = "proteinms"
-             )),
+             selectizeInput(
+               ns("select_features1"), "Please select the feature type:", 
+               choices = c("Copy Number Data" = "cnv",
+                           "DNA Methylation" = "meth",
+                           "Gene Fusion" = "fusion",
+                           "Gene Mutation" = "mutation_gene",
+                           "Gene Site Mutation" = "mutation_site",
+                           "mRNA Expression" = "mRNA",
+                           "Protein RPPA Expression" = "proteinrppa",
+                           "Protein MS Expression" = "proteinms",
+                           "Drug Sensitivity" = "drug"
+               ),
+               options = list(
+                 placeholder = 'Please select the feature type',
+                 onInitialize = I('function() { this.setValue(""); }'), selected = ""
+               ))),
       # Select specific feature ----
       column(4,
              selectizeInput(
@@ -44,19 +47,22 @@ uiBatchFeature <- function(id){
                ))),
       # Select Features 2 ----
       column(4,
-             selectInput(inputId = ns("select_features2"), 
-                         "Please select the second feature:", 
-                         choices = c("Copy Number Data" = "cnv",
-                                     "DNA Methylation" = "meth",
-                                     "Gene Fusion" = "fusion",
-                                     "Gene Mutation" = "mutation_gene",
-                                     "Gene Site Mutation" = "mutation_site",
-                                     "mRNA Expression" = "mRNA",
-                                     "Protein RPPA Expression" = "proteinrppa",
-                                     "Protein MS Expression" = "proteinms",
-                                     "Drug Sensitivity" = "drug"
-                         ), selected = "drug"
-             )),
+             selectizeInput(
+               ns("select_features2"), "Please select the second feature:", 
+               choices = c("Copy Number Data" = "cnv",
+                           "DNA Methylation" = "meth",
+                           "Gene Fusion" = "fusion",
+                           "Gene Mutation" = "mutation_gene",
+                           "Gene Site Mutation" = "mutation_site",
+                           "mRNA Expression" = "mRNA",
+                           "Protein RPPA Expression" = "proteinrppa",
+                           "Protein MS Expression" = "proteinms",
+                           "Drug Sensitivity" = "drug"
+               ),
+               options = list(
+                 placeholder = 'Please select the second feature',
+                 onInitialize = I('function() { this.setValue(""); }'), selected = ""
+               ))),
     ),
     # Add data_type and tumor_type filters
     fluidRow(

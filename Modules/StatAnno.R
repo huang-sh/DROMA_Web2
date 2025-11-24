@@ -117,7 +117,7 @@ serverStatAnno <- function(input, output, session){
   sample_annotations <- reactive({
     tryCatch({
       # Query sample metadata from database
-      conn <- get("droma_db_connection", envir = .GlobalEnv)
+      conn <- base::get("droma_db_connection", envir = .GlobalEnv)
       sample_query <- "SELECT * FROM sample_anno"
       sample_data <- DBI::dbGetQuery(conn, sample_query)
       sample_data
@@ -130,7 +130,7 @@ serverStatAnno <- function(input, output, session){
   drug_annotations <- reactive({
     tryCatch({
       # Query treatment metadata from database
-      conn <- get("droma_db_connection", envir = .GlobalEnv)
+      conn <- base::get("droma_db_connection", envir = .GlobalEnv)
       drug_query <- "SELECT * FROM drug_anno"
       drug_data <- DBI::dbGetQuery(conn, drug_query)
       drug_data

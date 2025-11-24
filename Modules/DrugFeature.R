@@ -146,25 +146,39 @@ serverDrugFeature <- function(input, output, session) {
     })
   })
   
-  # Get drug sensitivity data with annotations
+  # Get drug sensitivity data (without annotations)
   drug_sensitivity_data <- reactive({
     shiny::validate(
       shiny::need(input$select_drug != "", "Please select a drug.")
     )
     
     tryCatch({
-      # Use getDrugSensitivityData from DROMA_R which includes annotations
-      getDrugSensitivityData(
+      # Use processDrugData from DROMA_R to get basic drug data
+      processDrugData(
         dromaset_object = multi_dromaset(),
         select_drugs = input$select_drug,
         data_type = input$filter_data_type,
         tumor_type = input$filter_tumor_type,
-        overlap_only = FALSE,
-        include_annotations = TRUE
+        overlap_only = FALSE
       )
     }, error = function(e) {
       showNotification(paste("Error loading drug data:", e$message), type = "error")
       return(NULL)
+    })
+  })
+  
+  # Get annotated drug sensitivity data (with sample annotations)
+  annotated_drug_sensitivity_data <- reactive({
+    req(drug_sensitivity_data())
+    
+    tryCatch({
+      annotateDrugData(
+        drug_data = drug_sensitivity_data(),
+        db_path = config::get()$db_path
+      )
+    }, error = function(e) {
+      showNotification(paste("Error annotating drug data:", e$message), type = "error")
+      return(drug_sensitivity_data())  # Return unannotated data as fallback
     })
   })
   
@@ -192,8 +206,8 @@ serverDrugFeature <- function(input, output, session) {
   
   # Annotated drug table (with sample metadata)
   output$annotated_drug_table <- DT::renderDataTable({
-    req(drug_sensitivity_data())
-    data <- drug_sensitivity_data()
+    req(annotated_drug_sensitivity_data())
+    data <- annotated_drug_sensitivity_data()
     
     DT::datatable(
       data,
@@ -210,11 +224,14 @@ serverDrugFeature <- function(input, output, session) {
   
   # Dynamic UI for comparison settings
   output$comparison_ui <- renderUI({
-    req(input$compare_by, drug_sensitivity_data())
+    req(input$compare_by, annotated_drug_sensitivity_data())
+    
+    # Use annotated data to check variable types
+    data <- annotated_drug_sensitivity_data()
     
     # Check if the comparison variable is continuous (numeric)
-    if (input$compare_by %in% names(drug_sensitivity_data()) && 
-        is.numeric(drug_sensitivity_data()[[input$compare_by]])) {
+    if (input$compare_by %in% names(data) && 
+        is.numeric(data[[input$compare_by]])) {
       # For continuous variables
       fluidRow(
         column(6,
@@ -234,8 +251,10 @@ serverDrugFeature <- function(input, output, session) {
   
   # Comparison visualization
   output$comparison_plot <- renderPlot({
-    req(drug_sensitivity_data(), input$compare_by)
-    data <- drug_sensitivity_data()
+    req(annotated_drug_sensitivity_data(), input$compare_by)
+    
+    # Use annotated data for comparison
+    data <- annotated_drug_sensitivity_data()
     
     # Check if comparison variable exists
     if (!input$compare_by %in% names(data)) {
@@ -299,7 +318,8 @@ serverDrugFeature <- function(input, output, session) {
     },
     content = function(filename) {
       type <- input$download_type
-      data_to_save <- drug_sensitivity_data()
+      # Use annotated data for download
+      data_to_save <- annotated_drug_sensitivity_data()
       
       switch(type,
              "data_rds" = saveRDS(data_to_save, filename),
