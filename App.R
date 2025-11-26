@@ -125,15 +125,22 @@ server <- function(input, output, session) {
   # Initialize Global Settings Module
   callModule(serverGlobalSetting, "GlobalSetting")
   
+  # Create MultiDromaSet (cached across sessions)
+  projects <- listDROMAProjects(exclude_clinical = T)
+  multi_dromaset <- reactive({
+    db_path <- config::get()$db_path
+    createMultiDromaSetFromDatabase(project_names = projects$project_name, db_path = db_path)
+  })
+  
   # stop warn
   storeWarn <- getOption("warn")
   options(warn = -1) 
   # Drugs-omics pairs analysis ----
-  callModule(serverDrugOmicPair, "DrugOmicPair")
+  callModule(serverDrugOmicPair, "DrugOmicPair", multi_dromaset)
   # Features database significant analysis ----
-  callModule(serverBatchFeature, "BatchFeature")
+  callModule(serverBatchFeature, "BatchFeature", multi_dromaset)
   # Drug Feature Analysis ----
-  callModule(serverDrugFeature, "DrugFeature")
+  callModule(serverDrugFeature, "DrugFeature", multi_dromaset)
   # Statistics and Annotations ----
   callModule(serverStatAnno, "StatAnno")
 }

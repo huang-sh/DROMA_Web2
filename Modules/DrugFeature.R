@@ -112,7 +112,7 @@ uiDrugFeature <- function(id) {
 }
 
 # Server Component
-serverDrugFeature <- function(input, output, session) {
+serverDrugFeature <- function(input, output, session, multi_dromaset) {
   ns <- session$ns
   
   # Get available projects from database
@@ -120,12 +120,6 @@ serverDrugFeature <- function(input, output, session) {
   # Filter projects to only those with drug data
   projects_with_drug <- listDROMAProjects(feature_type = "drug", show_names_only = TRUE, exclude_clinical = T)
   projects <- projects[projects$project_name %in% projects_with_drug, ]
-  
-  # Create MultiDromaSet (cached)
-  multi_dromaset <- reactive({
-    db_path <- config::get()$db_path
-    createMultiDromaSetFromDatabase(project_names = projects$project_name, db_path = db_path)
-  })
   
   # Update drug selection choices
   observe({

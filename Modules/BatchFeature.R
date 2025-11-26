@@ -164,7 +164,7 @@ uiBatchFeature <- function(id){
   )
 }
 
-serverBatchFeature <- function(input, output, session){
+serverBatchFeature <- function(input, output, session, multi_dromaset){
   ns <- session$ns
   
   # Get available projects from database
@@ -173,12 +173,6 @@ serverBatchFeature <- function(input, output, session){
   # Filter projects to only those with drug data (drug list doesn't change, so compute once)
   projects_with_drug <- listDROMAProjects(feature_type = "drug", show_names_only = TRUE, exclude_clinical = T)
   filtered_projects_drug <- projects[projects$project_name %in% projects_with_drug, ]
-  
-  # Create MultiDromaSet (cached)
-  multi_dromaset <- reactive({
-    db_path <- config::get()$db_path
-    createMultiDromaSetFromDatabase(project_names = projects$project_name, db_path = db_path)
-  })
   
   # Track z-score changes
   zscore_tracker <- reactiveVal(if(exists("GLOBAL_ZSCORE_STATE", envir = .GlobalEnv)) 
